@@ -37,6 +37,8 @@ def generate_launch_description():
         get_package_share_directory('turtlebot3_gazebo'),
         'worlds',
         'empty_world.world'
+        # 'competition_world2.world'
+        # 'competition_world.world'
     )
 
     gzserver_cmd = IncludeLaunchDescription(

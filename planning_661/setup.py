@@ -20,7 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'mycontrol = planning_661.mycontrol:main'
+            'mycontrol = planning_661.mycontrol:main',
+            'printodom = planning_661.printodom:main',
+            'publishodom = planning_661.publishodom:main'
         ],
     },
 )

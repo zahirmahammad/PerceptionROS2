@@ -65,7 +65,7 @@ class node_class:
         Yn = Node_State[1]
         thetan = Node_State[2]
         thetan = (3.14/180)*thetan 
-        ontheway.append((Xn, 199-Yn)) # only for display
+        ontheway.append((Xn, 299-Yn)) # only for display
         while total<10:
             total += 1 # total no of lines that give a curve
             Xs = Xn
@@ -73,7 +73,7 @@ class node_class:
             thetan += (wheel_radius/track_width)*(ur - ul)*dt
             Xn += (wheel_radius/2)*(ul+ur)*np.cos(thetan)*dt # updating x
             Yn += (wheel_radius/2)*(ul+ur)*np.sin(thetan)*dt # updating y
-            ontheway.append((Xn, 199-Yn)) # only for display
+            ontheway.append((Xn, 299-Yn)) # only for display
             step+= np.sqrt((Xn-Xs)**2+(Yn-Ys)**2) # calculating length of curve
 
             # pygame.draw.line(window, (0,0,0), (Xs, Ys), (Xn, Yn) , width=1)
@@ -111,7 +111,7 @@ def backtrack(closedlist): # Function for backtracking
     states.reverse() # reversing the list
     return states
 
-# fuction for state correction to put nodes in any one of the node in 600*200*12
+# fuction for state correction to put nodes in any one of the node in 600*300*12
 def sc(Node):
     state=Node.copy()
     # state[0], state[1], state[2] = state[0], state[1], state[2]
@@ -146,34 +146,34 @@ print(" \nPlease wait, Preparing Map ..... ")
 
 # OBSTACLE SPACE FOR P3P2 Map
 
-def obstacle(x,y): # Returns value >= 1, if a point is in obstacle space
-    check = 0
-    check +=1 if x >= 150 and x < 175 and y >= 100  else 0 # 1 st obstacle
-    check +=1 if x >= 250 and x < 275 and y < 100  else 0 # 1 st obstacle
-    check +=1 if (x - 420)**2 + (y-120)**2 <= 3600 else 0 # equations for lines that surround polygon
-    return check 
+# def obstacle(x,y): # Returns value >= 1, if a point is in obstacle space
+#     check = 0
+#     check +=1 if x >= 150 and x < 175 and y >= 100  else 0 # 1 st obstacle
+#     check +=1 if x >= 250 and x < 275 and y < 100  else 0 # 1 st obstacle
+#     check +=1 if (x - 420)**2 + (y-120)**2 <= 3600 else 0 # equations for lines that surround polygon
+#     return check 
 
 #OBSTACLE SPACE FOR EXAMPLE MAP
-# def obstacle(x,y):
-#     check = 0
-#     check +=1 if x>=60 and x<90 and y >= 40 and y< 70 else 0 
-#     check +=1 if x>=210 and x<240 and y >= 40 and y< 70 else 0 
-#     check +=1 if x>=210 and x<240 and y >= 210 and y< 240 else 0 
-#     check +=1 if x>=360 and x<390 and y >= 40 and y< 70 else 0 
-#     check +=1 if x>=360 and x<390 and y >= 210 and y< 240 else 0 
-#     check +=1 if x>=510 and x<540 and y >= 40 and y< 70 else 0 
-#     check +=1 if x>=510 and x<540 and y >= 210 and y< 240 else 0 
+def obstacle(x,y):
+    check = 0
+    check +=1 if x>=60 and x<90 and y >= 40 and y< 70 else 0 
+    check +=1 if x>=210 and x<240 and y >= 40 and y< 70 else 0 
+    check +=1 if x>=210 and x<240 and y >= 210 and y< 240 else 0 
+    check +=1 if x>=360 and x<390 and y >= 40 and y< 70 else 0 
+    check +=1 if x>=360 and x<390 and y >= 210 and y< 240 else 0 
+    check +=1 if x>=510 and x<540 and y >= 40 and y< 70 else 0 
+    check +=1 if x>=510 and x<540 and y >= 210 and y< 240 else 0 
     
-#     check +=1 if x>=150 and x<152 and y >= 120 and y< 300 else 0 
-#     check +=1 if x>=450 and x<452 and y >= 120 and y< 300 else 0 
-#     check +=1 if x>=300 and x<302 and y >= 0 and y< 180 else 0 
-#     return check
+    check +=1 if x>=150 and x<152 and y >= 120 and y< 300 else 0 
+    check +=1 if x>=450 and x<452 and y >= 120 and y< 300 else 0 
+    check +=1 if x>=300 and x<302 and y >= 0 and y< 180 else 0 
+    return check
 
 
-matrix = np.zeros((600,200,12)) # Defining a matrix representing canvas 1200 x 500 with zeros
+matrix = np.zeros((600,300,12)) # Defining a matrix representing canvas 1300 x 500 with zeros
 
 for i in range(600): # looping through all elements in matrix
-        for j in range(200):
+        for j in range(300):
             if obstacle(i,j) != 0:  # element changes to 1 if index shows obstacle space
                 for k in range(12):
                     matrix[i,j,k]=1 # 1 means obstacle
@@ -182,8 +182,8 @@ print("created normal map")
 # looking for corner pixels
 corner_obstacle_pixels=[]
 for i in range(600): # looping through all elements in matrix
-        for j in range(200):
-            if i==0 or i==599 or j==0 or j==199:
+        for j in range(300):
+            if i==0 or i==599 or j==0 or j==299:
                 corner_obstacle_pixels.append((i,j))
             try:
               if matrix[i,j,0] == 1:
@@ -217,7 +217,7 @@ print("done bloating")
 #     return round(rotated_x), round(rotated_y)
 
 # # checking robots possiblity to stay at that node in an angle
-robot_clearence=np.zeros((600,200,12)) # creating a matrix that represents if robot can go to that node, in that angle
+robot_clearence=np.zeros((600,300,12)) # creating a matrix that represents if robot can go to that node, in that angle
 
 
 # # looping through theta, with 30 deg threshold, gives 12 possibilities
@@ -235,14 +235,14 @@ robot_clearence=np.zeros((600,200,12)) # creating a matrix that represents if ro
 
 #     # looping through all the states in canvas, for every thets position
 #     for a in range(600):
-#         for b in range(200):
+#         for b in range(300):
 #         #   if robot_clearence[a,b,theta]==0:
 
 #             if matrix[a,b,0] == 0: # extracting all points in robots perimeter, at a particular angle
 #                 for i,j in points_set:
 #                     x = i+a
 #                     y = j+b
-#                     if 0<=x<600 and 0<=y<200:
+#                     if 0<=x<600 and 0<=y<300:
 #                         if matrix[x,y,0]!=0: # checking if any of robots edges touches obstacle
 #                             robot_clearence[a,b,theta]=1
 #                             break
@@ -259,7 +259,7 @@ print("done angular obstacle check")
 #     start_node_input_x = int(input("Start Node 'X' : "))
 #     start_node_input_y = int(input("Start Node 'Y' : "))
 #     start_node_input_0 = int(input("Start Node 'theta' : "))//30
-#     if start_node_input_x>=0 and start_node_input_x<600 and start_node_input_y>=0 and start_node_input_x<200 and matrix[start_node_input_x, start_node_input_y, start_node_input_0] == 0:
+#     if start_node_input_x>=0 and start_node_input_x<600 and start_node_input_y>=0 and start_node_input_x<300 and matrix[start_node_input_x, start_node_input_y, start_node_input_0] == 0:
 #             invalid_start = False
 #             start_state = [start_node_input_x, start_node_input_y, start_node_input_0]
 #     else:
@@ -273,7 +273,7 @@ print("done angular obstacle check")
 #     goal_node_input_y = int(input("Goal Node 'Y' : "))
 #     # goal_node_input_0 = int(input("Goal Node 'theta' : "))//30
 #     goal_node_input_0 = 0
-#     if goal_node_input_x>=0 and goal_node_input_x<6000 and goal_node_input_y>=0 and goal_node_input_y<2000 and matrix[goal_node_input_x//10, goal_node_input_y//10, 0] == 0:
+#     if goal_node_input_x>=0 and goal_node_input_x<6000 and goal_node_input_y>=0 and goal_node_input_y<3000 and matrix[goal_node_input_x//10, goal_node_input_y//10, 0] == 0:
 #             invalid_goal = False   
 #             goal_state = [goal_node_input_x//10, goal_node_input_y//10, goal_node_input_0]
 #     else:
@@ -313,7 +313,7 @@ print("\n  Computing Path .....  ")
 #Defining initial and final nodes
 
 start_state = [50,100,0] #state of start point
-goal_state = [550,50,0] #state of Goal point
+goal_state = [550,150,0] #state of Goal point
 
 # start_state = [50,100,0] #state of start point
 # goal_state = [goal_state[0]/10,goal_state[1]/10] #state of Goal point
@@ -372,7 +372,7 @@ while loop:
       children_plot.append(ontheway) # for explored states plotting
       child_corrected = sc(child) #corrected state for children
       
-      if 0<= child_corrected[0] < 600 and 0<= child_corrected[1] <200: 
+      if 0<= child_corrected[0] < 600 and 0<= child_corrected[1] <300: 
         # checking if child state is possible for robot to go without colliding
         if robot_clearence[child_corrected[0],child_corrected[1],child_corrected[2]] ==0:
 
@@ -417,7 +417,7 @@ print("No of explored ",no_of_nodes)
 
 pygame.init()
 #initializing window
-window = pygame.display.set_mode((600,200)) # window size
+window = pygame.display.set_mode((600,300)) # window size
 window.fill((255,255,255)) # filling it with color
 #initializing color
 white=(230,230,230)
@@ -428,13 +428,13 @@ blue = (105,135,235)
 
 # LOOP to transform matrix into this window
 for i in range(600):
-    for j in range(200):
+    for j in range(300):
             if matrix[i,j,0]==1: # 1 -> red color showing obstacles
-                window.set_at((i,199-j),red)
+                window.set_at((i,299-j),red)
             elif matrix[i,j,0]==2: # 2-> black showing bloating part
-                window.set_at((i,199-j),black)
+                window.set_at((i,299-j),black)
             elif matrix[i,j,0]==5:
-                window.set_at((i,199-j),grey)
+                window.set_at((i,299-j),grey)
 
 pygame.display.flip() #updating window
 
@@ -446,8 +446,8 @@ for i,oneset in enumerate(all_ontheway):
             pygame.display.flip()
 
 # plotting start node
-pygame.draw.circle(window,black,(start_state[0],199-start_state[1]),5)
-pygame.draw.circle(window,(50,220,50),(start_state[0],199-start_state[1]),3)
+pygame.draw.circle(window,black,(start_state[0],299-start_state[1]),5)
+pygame.draw.circle(window,(50,220,50),(start_state[0],299-start_state[1]),3)
 time.sleep(1)
 
 # loop to print all states in the path
@@ -461,7 +461,7 @@ for i in points_list[:-1]:
 for i in range(len(points_list)-1):
     # all_children = all_children_plot_dict[tuple(i)] # to get all 8 curves
     # for points_set in all_children: 
-        pygame.draw.line(window, red, tuple((points_list[i][0],199 - points_list[i][1])),tuple((points_list[i+1][0], 199 - points_list[i+1][1])) ,width = 1 )
+        pygame.draw.line(window, red, tuple((points_list[i][0],299 - points_list[i][1])),tuple((points_list[i+1][0], 299 - points_list[i+1][1])) ,width = 1 )
         pygame.display.flip()
 
 # loop for printing the path
@@ -471,8 +471,8 @@ for i in range(len(points_list)-1):
     action_list.append(camefrom_action)
 
 # plotting goal state
-pygame.draw.circle(window,black,(goal_state[0],199-goal_state[1]),5) #plotting end node
-pygame.draw.circle(window,red,(goal_state[0],199-goal_state[1]),3)
+pygame.draw.circle(window,black,(goal_state[0],299-goal_state[1]),5) #plotting end node
+pygame.draw.circle(window,red,(goal_state[0],299-goal_state[1]),3)
 pygame.display.update()
 
 print("Points list")
