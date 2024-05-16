@@ -12,6 +12,7 @@ import torch
 import time
 
 model = torch.hub.load('ultralytics/yolov5', 'custom', path='/home/zahir/turtlebot3_ws/src/perception/perception/best_100.pt', force_reload=True)
+start_time = time.time()
 
 ### ------------------ Stop Sign -------------------------------- #####
 def stop_fn_classifier(image):
@@ -62,6 +63,7 @@ def stop_fn(image):
 ## -------------------- Horizon ---------------------------- ##
 
 def horizon_line(image):
+    
     # convert gray
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     #  thresholding
@@ -79,20 +81,22 @@ def horizon_line(image):
 
     # Filter out horizontal lines
     filtered_lines = []
-    for i in range(len(lines)-1):
-        x1, y1, x2, y2 = lines[i][0]
-        angle1 = np.rad2deg(np.arctan2(y2 - y1, x2 - x1))
-        # print(angle1)
-        parallel_count = 0
-        if -5<=angle1<=5 or 85<=angle1<=95 or -90<=angle1<=-85:
-            continue
+    try:
+        for i in range(len(lines)-1):
+            x1, y1, x2, y2 = lines[i][0]
+            angle1 = np.rad2deg(np.arctan2(y2 - y1, x2 - x1))
+            # print(angle1)
+            parallel_count = 0
+            if -5<=angle1<=5 or 85<=angle1<=95 or -90<=angle1<=-85:
+                continue
 
-        filtered_lines.append(lines[i])
-
+            filtered_lines.append(lines[i])
+    except:
+        return None
     # image2 = image.copy()
     for line in filtered_lines:
         x1 , y1, x2 , y2 = line[0]
-        cv2.line(image, (x1,y1), (x2,y2), (250,0,0),2)
+        # cv2.line(image, (x1,y1), (x2,y2), (250,0,0),2)
     print("No of filtered lines: ", len(filtered_lines))
 
 
@@ -140,7 +144,7 @@ def horizon_line(image):
         hl_start_point = (0, y_intersect)
         hl_end_point = (image.shape[1], y_intersect)
         # Draw the line parallel to x-axis
-        cv2.line(image, hl_start_point, hl_end_point, (0, 155, 255), 6)  # Blue line with thickness 2  # horizon  line 
+        cv2.line(image, hl_start_point, hl_end_point, (255, 155, 0), 2)  # Blue line with thickness 2  # horizon  line 
 
         cv2.circle(image, (x_intersect,y_intersect), 5, (255, 0, 0), -1)  # vanishing point # Green circle at intersection #random pt test
 
@@ -212,7 +216,7 @@ def get_center(image):
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
         # 3. Clear background
-        _, thresh = cv2.threshold(blurred, 220, 255, cv2.THRESH_BINARY)
+        _, thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY)
         thresh[:275,:] = 0    
         
         # 4. Find Cont
@@ -233,8 +237,9 @@ def get_center(image):
         #     goto = centers[0] 
         cnt = contours[0]
         area = cv2.contourArea(contours[0])
-        if area < 12000:
-            cnt = contours[1]
+        if len(contours) > 1:
+            if area < 12000:
+                cnt = contours[1]
         # # print(area)
         M = cv2.moments(cnt)
         # print(M)
@@ -250,10 +255,11 @@ def get_center(image):
 
     except:
         # pass
-        return [image.shape[1]//2, image.shape[0]//2]
+        return [image.shape[0]//2, image.shape[1]//2]
 ## ----------------- End Planning ------------------##
 
 
+counter = []
 
 
 
@@ -272,6 +278,7 @@ class Percept(Node):
             history=QoSHistoryPolicy.KEEP_LAST,
         )
 
+        # self.subscription = self.sub_node.create_subscription(Image, '/image_raw',  self.image_callback, qos_profile )
         self.subscription = self.sub_node.create_subscription(Image, '/camera/image_raw',  self.image_callback, qos_profile )
         self.cv_bridge = CvBridge()
         self.stop = False
@@ -281,9 +288,11 @@ class Percept(Node):
         self.y_point = 0
         self.robot_ref_pixel = ()
         self.counter = 0
+        self.y_point = None
 
 
     def image_callback(self, msg):
+        global start_time
         try:
             # Convert the ROS Image message to a CV2 image
             self.cv_image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -291,6 +300,17 @@ class Percept(Node):
             self.iw = self.cv_image.shape[1]
             self.ih = self.cv_image.shape[0]
             self.robot_ref_pixel = (self.iw/2, self.ih)
+
+            # Detect Horizon Line
+            if self.y_point is None:
+                self.y_point = horizon_line(self.cv_image)
+                cv2.imshow('Horizon Line', self.cv_image)
+                time.sleep(2)
+
+            # Display the horizon line
+            if self.y_point is not None:
+                cv2.line(self.cv_image, (0, self.y_point), (self.iw, self.y_point), (255, 155, 0), 2)
+                cv2.putText(self.cv_image, "Horizon", (self.iw//2, self.y_point-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 155, 0), 2)
 
 
             # Stop Sign 
@@ -304,16 +324,34 @@ class Percept(Node):
             self.center = get_center(self.cv_image)
 
             # Dynamic Obstacle
-            self.obstacle = self.DynamicObstacle(self.cv_image)
+            # current_time = time.time()
+            # if current_time - start_time >= 0.2:
+                # print('im in dynamics')
+            
+            if self.obstacle == True:
+                print("Dynamic Obstacle Ahead")
+                check = self.DynamicObstacle(self.cv_image)
+                counter.append(check)
+                if len(counter) > 5:
+                    # find which is more in number true or false
+                    if counter.count(True) > 2:
+                        self.obstacle = True
+                    else:
+                        self.obstacle = False
+                    counter.clear()
+            else:
+                # print(self.DynamicObstacle(self.cv_image))
+                self.obstacle = self.DynamicObstacle(self.cv_image)
+
+
+                # start_time = current_time
             # if self.obstacle:
                 # cv2.putText(self.cv_image, "Dynamic Obstacle Ahead", (self.iw//2, 0+50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 100, 230), 2)
 
             # horizon line
             # y_point = horizon_line(self.cv_image)
 
-            # Display the horizon line
-            cv2.line(self.cv_image, (0, self.y_point), (self.iw, self.y_point), (0, 100, 230), 2)
-            cv2.putText(self.cv_image, "Horizon", (self.iw//2, self.y_point-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 100, 230), 2)
+
 
 
             # Display the image using OpenCV
@@ -332,7 +370,7 @@ class Percept(Node):
         m = -math.degrees(math.atan2(y - goaly, x - goalx))
         if m < 0:
             m+=360
-        turn_angle = m - goal_angle
+        turn_angle = m - (goal_angle - 5) 
 
         print("Turn:  ", turn_angle)
 
@@ -344,16 +382,17 @@ class Percept(Node):
 
         velocity.linear.x = 0.08
 
-        if y > self.ih - 120:
+        if y > self.ih - 70 or x < 0 + 30 or x > self.iw - 30:
             velocity.angular.z = ang_vel
             velocity.linear.x = 0.0
 
-        if -3<turn_angle<3:
+        if -5<turn_angle<5:
             velocity.linear.x = 0.08
 
         if self.obstacle or self.stop:
             velocity.linear.x = 0.0
             velocity.angular.z = 0.0 
+            # time.sleep(2)
 
         self.velpub.publish(velocity)
 
@@ -364,20 +403,22 @@ class Percept(Node):
         # Resize the frame (640x480)
         ## Dynamic Obstacle
         rclpy.spin_once(self.sub_node)
+        print("Image size: ", (self.iw,self.ih))
 
         # width = 640
         # height = 480
         # self.prev_img = cv2.resize(self.cv_image, (width,height))
         self.prev_gray = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
-
-        # start_time = time.time()
-        # while time.time() - start_time < 3:
-            # rclpy.spin_once(self.sub_node)
-        self.y_point = horizon_line(self.cv_image)
-
+        counter = 0
         while True:
             rclpy.spin_once(self.sub_node)
-            self.run(self.center[0], self.center[1])
+            if self.center == [self.cv_image.shape[0]//2, self.cv_image.shape[1]//2]:
+                counter+=1
+                if counter > 50:
+                    break
+            else:
+                self.run(self.center[0], self.center[1])
+
 
             
 
